@@ -56,11 +56,15 @@ model = ConvNet().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 train_losses = []
+train_accuracies = []
 
 # ✅ Обучение
 for epoch in range(epochs):
     model.train()
     total_loss = 0
+    correct = 0
+    total = 0
+
     for images, labels in train_loader:
         images, labels = images.to(device), labels.to(device)
 
@@ -72,17 +76,32 @@ for epoch in range(epochs):
 
         total_loss += loss.item()
 
+        _, predicted = torch.max(outputs.data, 1)   # argmax по классам
+        total += labels.size(0)                    # сколько всего образцов
+        correct += (predicted == labels).sum().item()  # сколько угадано
+
     avg_loss = total_loss / len(train_loader)
+    accuracy = 100 * correct / total
+
     train_losses.append(avg_loss)
-    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}")
+    train_accuracies.append(accuracy)
+
+    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}")
 
 # ✅ Вывод графика
-plt.plot(train_losses)
+plt.plot(train_losses, marker='o')
 plt.xlabel("Epoch")
 plt.ylabel("Train Loss")
 plt.title("Loss curve")
 plt.grid()
-plt.show()
+plt.savefig("train_losses.png")
+
+plt.plot(train_accuracies, marker='o')
+plt.xlabel("Epoch")
+plt.ylabel("Train Accuracy")
+plt.title("Train Accuracy per Epoch")
+plt.grid()
+plt.savefig("train_accuracy.png")
 
 # ✅ Тестирование
 model.eval()
