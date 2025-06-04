@@ -57,6 +57,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 train_losses = []
 train_accuracies = []
+test_accuracies = []
 
 # ✅ Обучение
 for epoch in range(epochs):
@@ -88,6 +89,23 @@ for epoch in range(epochs):
 
     print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}")
 
+    # ✅ Тестирование
+    model.eval()
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    accuracy = 100 * correct / total
+    test_accuracies.append(accuracy)
+    print(f"Точность на тесте: {correct / total:.2f}%")
+
 # ✅ Вывод графика
 fig, ax1 = plt.subplots()
 
@@ -115,23 +133,6 @@ plt.savefig("train_loss_and_accuracy.png")
 plt.show()
 plt.clf()
 
-# ✅ Тестирование
-model.eval()
-correct = 0
-total = 0
-test_accuracies = []
-
-with torch.no_grad():
-    for images, labels in test_loader:
-        images, labels = images.to(device), labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-accuracy = correct / total
-test_accuracies.append(accuracy)
-print(f"Точность на тесте: {100 * correct / total:.2f}%")
 
 plt.figure()
 plt.plot(train_accuracies, label='Train Accuracy', marker='o')
