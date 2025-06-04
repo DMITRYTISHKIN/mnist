@@ -113,11 +113,14 @@ plt.grid(True)
 # Сохраняем
 plt.savefig("train_loss_and_accuracy.png")
 plt.show()
+plt.clf()
 
 # ✅ Тестирование
 model.eval()
 correct = 0
 total = 0
+test_accuracies = []
+
 with torch.no_grad():
     for images, labels in test_loader:
         images, labels = images.to(device), labels.to(device)
@@ -126,4 +129,17 @@ with torch.no_grad():
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
+accuracy = correct / total
+test_accuracies.append(accuracy)
 print(f"Точность на тесте: {100 * correct / total:.2f}%")
+
+plt.figure()
+plt.plot(train_accuracies, label='Train Accuracy', marker='o')
+plt.plot(test_accuracies, label='Test Accuracy', marker='x')
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("Train vs Test Accuracy per Epoch")
+plt.grid()
+plt.legend()
+plt.savefig("accuracy_comparison.png")
+plt.show()
