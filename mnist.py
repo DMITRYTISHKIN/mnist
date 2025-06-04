@@ -69,7 +69,9 @@ for epoch in range(epochs):
         optimizer.step()                  # обновление весов
 
         total_loss += loss.item()
-    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}")
+
+    avg_loss = total_loss / len(train_loader)
+    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}")
 
 # ✅ Тестирование
 model.eval()
