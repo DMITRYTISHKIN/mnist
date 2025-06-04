@@ -6,24 +6,6 @@ import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-# ✅ Гиперпараметры
-batch_size = 64
-learning_rate = 0.01
-epochs = 5
-
-# ✅ Преобразования для изображений
-transform = transforms.Compose([
-    transforms.ToTensor(),                             # Преобразуем в тензор
-    transforms.Normalize((0.1307,), (0.3081,))          # Нормализация
-])
-
-# ✅ Загрузка MNIST
-train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-test_dataset  = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
-
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
 # ✅ Определим сверточную нейросеть
 class ConvNet(nn.Module):
     def __init__(self):
@@ -50,97 +32,121 @@ class ConvNet(nn.Module):
         x = self.fc2(x)                        # логиты
         return x
 
-# ✅ Инициализация модели, loss и optimizer
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = ConvNet().to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-train_losses = []
-train_accuracies = []
-test_accuracies = []
+def main():
+    # ✅ Гиперпараметры
+    batch_size = 64
+    learning_rate = 0.01
+    epochs = 5
 
-# ✅ Обучение
-for epoch in range(epochs):
-    model.train()
-    total_loss = 0
-    correct = 0
-    total = 0
+    # ✅ Преобразования для изображений
+    transform = transforms.Compose([
+        transforms.ToTensor(),                             # Преобразуем в тензор
+        transforms.Normalize((0.1307,), (0.3081,))          # Нормализация
+    ])
 
-    for images, labels in train_loader:
-        images, labels = images.to(device), labels.to(device)
+    # ✅ Загрузка MNIST
+    train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+    test_dataset  = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 
-        optimizer.zero_grad()             # обнуляем градиенты
-        outputs = model(images)           # прямой проход
-        loss = criterion(outputs, labels) # считаем ошибку
-        loss.backward()                   # обратное распространение
-        optimizer.step()                  # обновление весов
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        total_loss += loss.item()
+    # ✅ Инициализация модели, loss и optimizer
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = ConvNet().to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    train_losses = []
+    train_accuracies = []
+    test_accuracies = []
 
-        _, predicted = torch.max(outputs.data, 1)   # argmax по классам
-        total += labels.size(0)                    # сколько всего образцов
-        correct += (predicted == labels).sum().item()  # сколько угадано
+    # ✅ Обучение
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0
+        correct = 0
+        total = 0
 
-    avg_loss = total_loss / len(train_loader)
-    accuracy = 100 * correct / total
-
-    train_losses.append(avg_loss)
-    train_accuracies.append(accuracy)
-
-    print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}")
-
-    # ✅ Тестирование
-    model.eval()
-    correct = 0
-    total = 0
-
-    with torch.no_grad():
-        for images, labels in test_loader:
+        for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
 
-    accuracy = 100 * correct / total
-    test_accuracies.append(accuracy)
-    print(f"Точность на тесте: {correct / total:.2f}%")
+            optimizer.zero_grad()             # обнуляем градиенты
+            outputs = model(images)           # прямой проход
+            loss = criterion(outputs, labels) # считаем ошибку
+            loss.backward()                   # обратное распространение
+            optimizer.step()                  # обновление весов
 
-# ✅ Вывод графика
-fig, ax1 = plt.subplots()
+            total_loss += loss.item()
 
-# Левая ось Y — Loss
-color = 'tab:red'
-ax1.set_xlabel('Epoch')
-ax1.set_ylabel('Train Loss', color=color)
-ax1.plot(train_losses, color=color, marker='o', label='Loss')
-ax1.tick_params(axis='y', labelcolor=color)
+            _, predicted = torch.max(outputs.data, 1)   # argmax по классам
+            total += labels.size(0)                    # сколько всего образцов
+            correct += (predicted == labels).sum().item()  # сколько угадано
 
-# Правая ось Y — Accuracy
-ax2 = ax1.twinx()  # вторая ось Y
-color = 'tab:blue'
-ax2.set_ylabel('Train Accuracy', color=color)
-ax2.plot(train_accuracies, color=color, marker='x', label='Accuracy')
-ax2.tick_params(axis='y', labelcolor=color)
+        avg_loss = total_loss / len(train_loader)
+        accuracy = 100 * correct / total
 
-# Заголовок и сетка
-plt.title("Train Loss & Accuracy per Epoch")
-fig.tight_layout()
-plt.grid(True)
+        train_losses.append(avg_loss)
+        train_accuracies.append(accuracy)
 
-# Сохраняем
-plt.savefig("train_loss_and_accuracy.png")
-plt.show()
-plt.clf()
+        print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}")
+
+        # ✅ Тестирование
+        model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for images, labels in test_loader:
+                images, labels = images.to(device), labels.to(device)
+                outputs = model(images)
+                _, predicted = torch.max(outputs, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        accuracy = 100 * correct / total
+        test_accuracies.append(accuracy)
+        print(f"Точность на тесте: {correct / total:.2f}%")
+
+    torch.save(model.state_dict(), "mnist_cnn.pth")
+
+    # ✅ Вывод графика
+    fig, ax1 = plt.subplots()
+
+    # Левая ось Y — Loss
+    color = 'tab:red'
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Train Loss', color=color)
+    ax1.plot(train_losses, color=color, marker='o', label='Loss')
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    # Правая ось Y — Accuracy
+    ax2 = ax1.twinx()  # вторая ось Y
+    color = 'tab:blue'
+    ax2.set_ylabel('Train Accuracy', color=color)
+    ax2.plot(train_accuracies, color=color, marker='x', label='Accuracy')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    # Заголовок и сетка
+    plt.title("Train Loss & Accuracy per Epoch")
+    fig.tight_layout()
+    plt.grid(True)
+
+    # Сохраняем
+    plt.savefig("train_loss_and_accuracy.png")
+    plt.show()
+    plt.clf()
 
 
-plt.figure()
-plt.plot(train_accuracies, label='Train Accuracy', marker='o')
-plt.plot(test_accuracies, label='Test Accuracy', marker='x')
-plt.xlabel("Epoch")
-plt.ylabel("Accuracy")
-plt.title("Train vs Test Accuracy per Epoch")
-plt.grid()
-plt.legend()
-plt.savefig("accuracy_comparison.png")
-plt.show()
+    plt.figure()
+    plt.plot(train_accuracies, label='Train Accuracy', marker='o')
+    plt.plot(test_accuracies, label='Test Accuracy', marker='x')
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.title("Train vs Test Accuracy per Epoch")
+    plt.grid()
+    plt.legend()
+    plt.savefig("accuracy_comparison.png")
+    plt.show()
+
+if __name__ == "__main__":
+    main()
