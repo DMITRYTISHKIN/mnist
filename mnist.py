@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
@@ -54,6 +55,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ConvNet().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+train_losses = []
 
 # ✅ Обучение
 for epoch in range(epochs):
@@ -71,7 +73,16 @@ for epoch in range(epochs):
         total_loss += loss.item()
 
     avg_loss = total_loss / len(train_loader)
+    train_losses.append(avg_loss)
     print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}")
+
+# ✅ Вывод графика
+plt.plot(train_losses)
+plt.xlabel("Epoch")
+plt.ylabel("Train Loss")
+plt.title("Loss curve")
+plt.grid()
+plt.show()
 
 # ✅ Тестирование
 model.eval()
