@@ -89,19 +89,30 @@ for epoch in range(epochs):
     print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss:.4f}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}")
 
 # ✅ Вывод графика
-plt.plot(train_losses, marker='o')
-plt.xlabel("Epoch")
-plt.ylabel("Train Loss")
-plt.title("Loss curve")
-plt.grid()
-plt.savefig("train_losses.png")
+fig, ax1 = plt.subplots()
 
-plt.plot(train_accuracies, marker='o')
-plt.xlabel("Epoch")
-plt.ylabel("Train Accuracy")
-plt.title("Train Accuracy per Epoch")
-plt.grid()
-plt.savefig("train_accuracy.png")
+# Левая ось Y — Loss
+color = 'tab:red'
+ax1.set_xlabel('Epoch')
+ax1.set_ylabel('Train Loss', color=color)
+ax1.plot(train_losses, color=color, marker='o', label='Loss')
+ax1.tick_params(axis='y', labelcolor=color)
+
+# Правая ось Y — Accuracy
+ax2 = ax1.twinx()  # вторая ось Y
+color = 'tab:blue'
+ax2.set_ylabel('Train Accuracy', color=color)
+ax2.plot(train_accuracies, color=color, marker='x', label='Accuracy')
+ax2.tick_params(axis='y', labelcolor=color)
+
+# Заголовок и сетка
+plt.title("Train Loss & Accuracy per Epoch")
+fig.tight_layout()
+plt.grid(True)
+
+# Сохраняем
+plt.savefig("train_loss_and_accuracy.png")
+plt.show()
 
 # ✅ Тестирование
 model.eval()
