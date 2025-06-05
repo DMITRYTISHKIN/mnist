@@ -35,8 +35,8 @@ class ConvNet(nn.Module):
 def main():
     # ✅ Гиперпараметры
     batch_size = 64
-    learning_rate = 0.01
-    epochs = 5
+    learning_rate = 0.1
+    epochs = 20
 
     # ✅ Преобразования для изображений
     transform = transforms.Compose([
@@ -55,10 +55,17 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ConvNet().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer,
+        step_size=10,   # каждые 10 эпох
+        gamma=0.1       # уменьшать lr в 10 раз
+    )
+
     train_losses = []
     train_accuracies = []
     test_accuracies = []
+    lrs = []
 
     # ✅ Обучение
     for epoch in range(epochs):
@@ -75,6 +82,7 @@ def main():
             loss = criterion(outputs, labels) # считаем ошибку
             loss.backward()                   # обратное распространение
             optimizer.step()                  # обновление весов
+            scheduler.step()
 
             total_loss += loss.item()
 
@@ -82,6 +90,7 @@ def main():
             total += labels.size(0)                    # сколько всего образцов
             correct += (predicted == labels).sum().item()  # сколько угадано
 
+        lrs.append(optimizer.param_groups[0]['lr'])
         avg_loss = total_loss / len(train_loader)
         accuracy = 100 * correct / total
 
@@ -137,7 +146,6 @@ def main():
     plt.clf()
 
 
-    plt.figure()
     plt.plot(train_accuracies, label='Train Accuracy', marker='o')
     plt.plot(test_accuracies, label='Test Accuracy', marker='x')
     plt.xlabel("Epoch")
@@ -146,6 +154,14 @@ def main():
     plt.grid()
     plt.legend()
     plt.savefig("accuracy_comparison.png")
+    plt.show()
+    plt.clf()
+
+    plt.plot(lrs)
+    plt.title("Learning Rate per Epoch")
+    plt.xlabel("Epoch")
+    plt.ylabel("LR")
+    plt.savefig("learning_rate_schedule.png")
     plt.show()
 
 if __name__ == "__main__":
