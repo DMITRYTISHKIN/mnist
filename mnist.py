@@ -35,7 +35,7 @@ class ConvNet(nn.Module):
 def main():
     # ✅ Гиперпараметры
     batch_size = 64
-    learning_rate = 0.1
+    learning_rate = 0.05
     epochs = 20
 
     # ✅ Преобразования для изображений
@@ -56,11 +56,7 @@ def main():
     model = ConvNet().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer,
-        step_size=10,   # каждые 10 эпох
-        gamma=0.1       # уменьшать lr в 10 раз
-    )
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
     train_losses = []
     train_accuracies = []
@@ -82,7 +78,6 @@ def main():
             loss = criterion(outputs, labels) # считаем ошибку
             loss.backward()                   # обратное распространение
             optimizer.step()                  # обновление весов
-            scheduler.step()
 
             total_loss += loss.item()
 
@@ -92,6 +87,9 @@ def main():
 
         lrs.append(optimizer.param_groups[0]['lr'])
         avg_loss = total_loss / len(train_loader)
+        scheduler.step()
+        for param_group in optimizer.param_groups:
+            print("LR:", param_group["lr"])
         accuracy = 100 * correct / total
 
         train_losses.append(avg_loss)
